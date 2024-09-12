@@ -1,0 +1,70 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mysql-setup
+spec:
+  template:
+    spec:
+      containers:
+        - name: mysql-setup
+          image: acryldata/datahub-mysql-setup:head
+          env:
+          - name: DATAHUB_DB_NAME
+            value: datahub
+          - name: MYSQL_HOST
+            value: mysql
+          - name: MYSQL_PASSWORD
+            value: datahub
+          - name: MYSQL_PORT
+            value: "3306"
+          - name: MYSQL_USERNAME
+            value: datahub
+      restartPolicy: Never
+  backoffLimit: 4
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-setup
+spec:
+  template:
+    spec:
+      containers:
+        - name: kafka-setup
+          image: acryldata/datahub-kafka-setup:head
+          env:
+          - name: DATAHUB_PRECREATE_TOPICS
+            value: "true"
+          - name: KAFKA_BOOTSTRAP_SERVER
+            value: kakfa:9092
+          # - name: KAFKA_ZOOKEEPER_CONNECT
+          #   value: zookeeper:2181
+          - name: USE_CONFLUENT_SCHEMA_REGISTRY
+            value: "FALSE"
+      restartPolicy: Never
+  backoffLimit: 4
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: elasticsearch-setup
+spec:
+  template:
+    spec:
+      containers:
+        - name: elasticsearch-setup
+          image: acryldata/datahub-elasticsearch-setup:head
+          env:
+          - name: ELASTICSEARCH_HOST
+            value: elasticsearch
+          - name: ELASTICSEARCH_PORT
+            value: "9200"
+          - name: ELASTICSEARCH_PROTOCOL
+            value: http
+          - name: ELASTICSEARCH_USE_SSL
+            value: "false"
+          - name: USE_AWS_ELASTICSEARCH
+            value: "false"
+      restartPolicy: Never
+  backoffLimit: 4
+---

@@ -1,0 +1,188 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+spec:
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Delete
+  serviceName: mysql
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mariadb:10.5.8
+          args:
+            - --character-set-server=utf8mb4
+            - --collation-server=utf8mb4_bin
+            - --default-authentication-plugin=mysql_native_password
+          env:
+            - name: MYSQL_DATABASE
+              value: datahub
+            - name: MYSQL_PASSWORD
+              value: datahub
+            - name: MYSQL_ROOT_PASSWORD
+              value: datahub
+            - name: MYSQL_USER
+              value: datahub
+          livenessProbe:
+            exec:
+              command:
+                - mysqladmin ping -h mysql -u $MYSQL_USER --password=$MYSQL_PASSWORD
+            failureThreshold: 5
+            initialDelaySeconds: 20
+            periodSeconds: 1
+            timeoutSeconds: 5   
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - name: mysqldata
+              mountPath: /var/lib/mysql
+  volumeClaimTemplates:
+    - metadata:
+        name: mysqldata
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 100Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  selector:
+    app: mysql
+  ports:
+    - name: mysql
+      protocol: TCP
+      port: 3306
+      targetPort: 3306
+
+
+
+
+
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   labels:
+#     io.kompose.service: mysqldata
+#   name: mysqldata
+# spec:
+#   accessModes:
+#     - ReadWriteOnce
+#   resources:
+#     requests:
+#       storage: 100Mi
+# ---
+# apiVersion: apps/v1
+# kind: StatefulSet
+# metadata:
+#   name: mysql
+# spec:
+#   selector:
+#     matchLabels:
+#       app: mysql
+#   serviceName: mysql
+#   replicas: 1
+#   template:
+#     metadata:
+#       labels:
+#         app: mysql
+#     spec:
+#       containers:
+#       - name: mysql
+#         image: rmariadb:10.5.8
+#         args:
+#           - --character-set-server=utf8mb4
+#           - --collation-server=utf8mb4_bin
+#           - --default-authentication-plugin=mysql_native_password
+#         env:
+#           - name: MYSQL_DATABASE
+#             value: datahub
+#           - name: MYSQL_PASSWORD
+#             value: datahub
+#           - name: MYSQL_ROOT_PASSWORD
+#             value: datahub
+#           - name: MYSQL_USER
+#             value: datahub
+#         livenessProbe:
+#           exec:
+#             command:
+#               - mysqladmin ping -h mysql -u $MYSQL_USER --password=$MYSQL_PASSWORD
+#           failureThreshold: 5
+#           initialDelaySeconds: 20
+#           periodSeconds: 1
+#           timeoutSeconds: 5        
+#         ports:
+#         - containerPort: 3306
+#           name: TCP
+#         volumeMounts:
+#         - name: mysqldata
+#           mountPath:  /var/lib/mysql
+#   volumeClaimTemplates:
+#   - metadata:
+#       name: mysqldata
+#     spec:
+#       accessModes: [ "ReadWriteOnce" ]
+#       resources:
+#         requests:
+#           storage: 1Gi
+
+
+
+
+
+
+# # metadata:
+# #   annotations:
+# #     kompose.cmd: kompose convert
+# #     kompose.version: 1.34.0 (cbf2835db)
+# #   labels:
+# #     io.kompose.service: mysql
+# #   name: mysql
+# # spec:
+# #   containers:
+# #     - args:
+# #         - --character-set-server=utf8mb4
+# #         - --collation-server=utf8mb4_bin
+# #         - --default-authentication-plugin=mysql_native_password
+# #       env:
+# #         - name: MYSQL_DATABASE
+# #           value: datahub
+# #         - name: MYSQL_PASSWORD
+# #           value: datahub
+# #         - name: MYSQL_ROOT_PASSWORD
+# #           value: datahub
+# #         - name: MYSQL_USER
+# #           value: datahub
+# #       image: mariadb:10.5.8
+# #       livenessProbe:
+# #         exec:
+# #           command:
+# #             - mysqladmin ping -h mysql -u $MYSQL_USER --password=$MYSQL_PASSWORD
+# #         failureThreshold: 5
+# #         initialDelaySeconds: 20
+# #         periodSeconds: 1
+# #         timeoutSeconds: 5
+# #       name: mysql
+# #       ports:
+# #         - containerPort: 3306
+# #           protocol: TCP
+# #       volumeMounts:
+# #         - mountPath: /var/lib/mysql
+# #           name: mysqldata
+# #   hostname: mysql
+# #   restartPolicy: OnFailure
+# #   volumes:
+# #     - name: mysqldata
+# #       persistentVolumeClaim:
+# #         claimName: mysqldata

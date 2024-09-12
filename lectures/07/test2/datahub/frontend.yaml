@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: datahub-frontend
+spec:
+  serviceName: datahub-frontend
+  replicas: 1
+  selector:
+    matchLabels:
+      app: datahub-frontend
+  template:
+    metadata:
+      labels:
+        app: datahub-frontend
+    spec:
+      containers:
+        - name: datahub-frontend
+          image: acryldata/datahub-frontend-react:head
+          env:
+            - name: DATAHUB_APP_VERSION
+              value: "1.0"
+            - name: DATAHUB_GMS_HOST
+              value: datahub-gms
+            - name: DATAHUB_GMS_PORT
+              value: "8080"
+            - name: DATAHUB_PLAY_MEM_BUFFER_SIZE
+              value: 10MB
+            - name: DATAHUB_SECRET
+              value: YouKnowNothing
+            - name: DATAHUB_TRACKING_TOPIC
+              value: DataHubUsageEvent_v1
+            - name: ELASTIC_CLIENT_HOST
+              value: elasticsearch
+            - name: ELASTIC_CLIENT_PORT
+              value: "9200"
+            - name: JAVA_OPTS
+              value: "-Xms512m -Xmx512m -Dhttp.port=9002 -Dconfig.file=datahub-frontend/conf/application.conf -Djava.security.auth.login.config=datahub-frontend/conf/jaas.conf -Dlogback.configurationFile=datahub-frontend/conf/logback.xml -Dlogback.debug=false -Dpidfile.path=/dev/null"
+            - name: KAFKA_BOOTSTRAP_SERVER
+              value: kafka:9092
+          ports:
+            - containerPort: 9002
+              protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: datahub-frontend
+spec:
+  selector:
+    app: datahub-frontend
+  ports:
+    - name: datahub-frontend
+      protocol: TCP
+      port: 9002
+      targetPort: 9002

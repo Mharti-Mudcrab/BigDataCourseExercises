@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: datahub-actions
+spec:
+  serviceName: datahub-actions
+  replicas: 1
+  selector:
+    matchLabels:
+      app: datahub-actions
+  template:
+    metadata:
+      labels:
+        app: datahub-actions
+    spec:
+      containers:
+        - name: datahub-actions
+          image: acryldata/datahub-actions:head
+          env:
+            - name: ACTIONS_CONFIG
+            - name: ACTIONS_EXTRA_PACKAGES
+            - name: DATAHUB_GMS_HOST
+              value: datahub-gms
+            - name: DATAHUB_GMS_PORT
+              value: "8080"
+            - name: DATAHUB_GMS_PROTOCOL
+              value: http
+            - name: DATAHUB_SYSTEM_CLIENT_ID
+              value: __datahub_system
+            - name: DATAHUB_SYSTEM_CLIENT_SECRET
+              value: JohnSnowKnowsNothing
+            - name: KAFKA_BOOTSTRAP_SERVER
+              value: kafka:9092
+            - name: KAFKA_PROPERTIES_SECURITY_PROTOCOL
+              value: PLAINTEXT
+            - name: METADATA_AUDIT_EVENT_NAME
+              value: MetadataAuditEvent_v4
+            - name: METADATA_CHANGE_LOG_VERSIONED_TOPIC_NAME
+              value: MetadataChangeLog_Versioned_v1
+            # - name: SCHEMA_REGISTRY_URL
+            #   value: http://schema-registry:8081

@@ -1,0 +1,184 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: elasticsearch
+spec:
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Delete
+  serviceName: elasticsearch
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+      containers:
+        - name: elasticsearch
+          image: elasticsearch:7.10.1
+          env:
+            - name: ES_JAVA_OPTS
+              value: -Xms256m -Xmx512m -Dlog4j2.formatMsgNoLookups=true
+            - name: OPENSEARCH_JAVA_OPTS
+              value: -Xms512m -Xmx512m -Dlog4j2.formatMsgNoLookups=true
+            - name: discovery.type
+              value: single-node
+            - name: xpack.security.enabled
+              value: "false"
+          livenessProbe:
+            exec:
+              command:
+                - curl -sS --fail http://elasticsearch:9200/_cluster/health?wait_for_status=yellow&timeout=0s
+            failureThreshold: 3
+            initialDelaySeconds: 20
+            periodSeconds: 1
+            timeoutSeconds: 5 
+          ports:
+            - containerPort: 9200
+          volumeMounts:
+            - name: elasticsearchdata
+              mountPath: /usr/share/elasticsearch/data
+  volumeClaimTemplates:
+    - metadata:
+        name: elasticsearchdata
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 100Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch
+spec:
+  selector:
+    app: elasticsearch
+  ports:
+    - name: elasticsearch
+      protocol: TCP
+      port: 9200
+      targetPort: 9200
+
+
+
+
+
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   labels:
+#     io.kompose.service: elasticsearchdata
+#   name: elasticsearchdata
+# spec:
+#   accessModes:
+#     - ReadWriteOnce
+#   resources:
+#     requests:
+#       storage: 100Mi
+# ---
+# apiVersion: apps/v1
+# kind: StatefulSet
+# metadata:
+#   name: elasticsearch
+# spec:
+#   selector:
+#     matchLabels:
+#       app: elasticsearch
+#   serviceName: elasticsearch
+#   replicas: 1
+#   template:
+#     metadata:
+#       labels:
+#         app: elasticsearch
+#     spec:
+#       containers:
+#       - name: elasticsearch
+#         image: rmariadb:10.5.8
+#         args:
+#           - --character-set-server=utf8mb4
+#           - --collation-server=utf8mb4_bin
+#           - --default-authentication-plugin=elasticsearch_native_password
+#         env:
+#           - name: MYSQL_DATABASE
+#             value: datahub
+#           - name: MYSQL_PASSWORD
+#             value: datahub
+#           - name: MYSQL_ROOT_PASSWORD
+#             value: datahub
+#           - name: MYSQL_USER
+#             value: datahub
+#         livenessProbe:
+#           exec:
+#             command:
+#               - elasticsearchadmin ping -h elasticsearch -u $MYSQL_USER --password=$MYSQL_PASSWORD
+#           failureThreshold: 5
+#           initialDelaySeconds: 20
+#           periodSeconds: 1
+#           timeoutSeconds: 5        
+#         ports:
+#         - containerPort: 3306
+#           name: TCP
+#         volumeMounts:
+#         - name: elasticsearchdata
+#           mountPath:  /var/lib/elasticsearch
+#   volumeClaimTemplates:
+#   - metadata:
+#       name: elasticsearchdata
+#     spec:
+#       accessModes: [ "ReadWriteOnce" ]
+#       resources:
+#         requests:
+#           storage: 1Gi
+
+
+
+
+
+
+# # metadata:
+# #   annotations:
+# #     kompose.cmd: kompose convert
+# #     kompose.version: 1.34.0 (cbf2835db)
+# #   labels:
+# #     io.kompose.service: elasticsearch
+# #   name: elasticsearch
+# # spec:
+# #   containers:
+# #     - args:
+# #         - --character-set-server=utf8mb4
+# #         - --collation-server=utf8mb4_bin
+# #         - --default-authentication-plugin=elasticsearch_native_password
+# #       env:
+# #         - name: MYSQL_DATABASE
+# #           value: datahub
+# #         - name: MYSQL_PASSWORD
+# #           value: datahub
+# #         - name: MYSQL_ROOT_PASSWORD
+# #           value: datahub
+# #         - name: MYSQL_USER
+# #           value: datahub
+# #       image: mariadb:10.5.8
+# #       livenessProbe:
+# #         exec:
+# #           command:
+# #             - elasticsearchadmin ping -h elasticsearch -u $MYSQL_USER --password=$MYSQL_PASSWORD
+# #         failureThreshold: 5
+# #         initialDelaySeconds: 20
+# #         periodSeconds: 1
+# #         timeoutSeconds: 5
+# #       name: elasticsearch
+# #       ports:
+# #         - containerPort: 3306
+# #           protocol: TCP
+# #       volumeMounts:
+# #         - mountPath: /var/lib/elasticsearch
+# #           name: elasticsearchdata
+# #   hostname: elasticsearch
+# #   restartPolicy: OnFailure
+# #   volumes:
+# #     - name: elasticsearchdata
+# #       persistentVolumeClaim:
+# #         claimName: elasticsearchdata

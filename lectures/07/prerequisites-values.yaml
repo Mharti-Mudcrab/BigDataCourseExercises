@@ -1,5 +1,9 @@
 elasticsearch:
   enabled: true
+  # image:
+  #   # registry: docker.elastic.co
+  #   # repository: docker.elastic.co/elasticsearch/elasticsearch
+  #   tag: "7.17.3"
   replicas: 1
   minimumMasterNodes: 1
   antiAffinity: "soft"
@@ -12,6 +16,10 @@ elasticsearch:
     limits:
       cpu: "1000m"
       memory: "1024M"
+  volumeClaimTemplate:
+    resources:
+      requests:
+        storage: 5Gi
 
 neo4j:
   enabled: true
@@ -45,6 +53,8 @@ neo4j:
 mysql:
   enabled: true
   image:
+    registry: docker.io
+    repository: bitnami/mysql
     tag: 8.0.32-debian-11-r26
   auth:
     existingSecret: mysql-secrets

@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.34.0 (cbf2835db)
+  labels:
+    io.kompose.service: datahub-frontend-react
+  name: datahub-frontend-react
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: datahub-frontend-react
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.34.0 (cbf2835db)
+      labels:
+        io.kompose.service: datahub-frontend-react
+    spec:
+      containers:
+        - env:
+            - name: DATAHUB_APP_VERSION
+              value: "1.0"
+            - name: DATAHUB_GMS_HOST
+              value: datahub-gms
+            - name: DATAHUB_GMS_PORT
+              value: "8080"
+            - name: DATAHUB_PLAY_MEM_BUFFER_SIZE
+              value: 10MB
+            - name: DATAHUB_SECRET
+              value: YouKnowNothing
+            - name: DATAHUB_TRACKING_TOPIC
+              value: DataHubUsageEvent_v1
+            - name: ELASTIC_CLIENT_HOST
+              value: elasticsearch
+            - name: ELASTIC_CLIENT_PORT
+              value: "9200"
+            - name: JAVA_OPTS
+              value: -Xms512m -Xmx512m -Dhttp.port=9002 -Dconfig.file=datahub-frontend/conf/application.conf -Djava.security.auth.login.config=datahub-frontend/conf/jaas.conf -Dlogback.configurationFile=datahub-frontend/conf/logback.xml -Dlogback.debug=false -Dpidfile.path=/dev/null
+            - name: KAFKA_BOOTSTRAP_SERVER
+              value: broker:29092
+          image: acryldata/datahub-frontend-react:head
+          name: datahub-frontend-react
+          ports:
+            - containerPort: 9002
+              protocol: TCP
+      hostname: datahub-frontend-react
+      restartPolicy: Always
