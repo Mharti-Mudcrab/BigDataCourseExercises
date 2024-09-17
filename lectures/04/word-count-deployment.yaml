@@ -1,0 +1,169 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: word-count-config
+data:
+  word-count.py: |
+    import sys
+    from operator import add
+    
+    from utils import FS, SPARK_ENV, get_spark_context
+
+    if __name__ == "__main__":
+      if len(sys.argv) != 2:
+        print("Usage: wordcount <file>", file=sys.stderr)
+        sys.exit(-1)
+    
+      filename = sys.argv[1]
+    
+      print(f"FS: {FS}")
+      print(f"Filename: {filename}")
+      print(f"Path: {FS}{filename}")
+    
+      spark = get_spark_context(app_name="Word Count", config=SPARK_ENV.K8S)
+      sc = spark.sparkContext
+    
+      # Read file line by line
+      lines = sc.textFile(f"{FS}{filename}")  # Read file from HDFS
+      # Split each line at spaces (splits it into words)
+      words = lines.flatMap(lambda x: x.split(" "))
+      # Map each word to a tuple (word, 1)
+      tuples = words.map(lambda x: (x, 1))
+      # Reduce tuples by key (word) which results in a list of tuples with unique words and their total counts
+      sums = tuples.reduceByKey(add)
+      # Sort the list of tuples by the second element (count) in descending order
+      sorted = sums.sortBy(lambda x: x[1], ascending=False)
+    
+      # Convert the sorted data to a DataFrame
+      result_df = sorted.toDF(schema=["word", "count"])
+    
+      # Save the result to a JSON file
+      writer = result_df.write.mode("overwrite")
+      writer.json(f"{FS}word-count.json")
+    
+      # Take the first 10 elements of the list
+      top_10 = sorted.take(10)
+      # Print the top 10 words and their counts
+      print(f"Top 10 words in {sys.argv[1]} are:")
+      for word, count in top_10:
+        print("%s: %i" % (word, count))
+    
+      spark.stop()
+
+  utils.py: |
+    """
+    This module contains utility functions for the Spark applications.
+    """
+
+    import locale
+    import os
+    import re
+    import subprocess
+    from enum import Enum
+
+    from pyspark import SparkConf
+    from pyspark.sql import SparkSession
+
+    locale.getdefaultlocale()
+    locale.getpreferredencoding()
+
+    FS: str = "hdfs://namenode:9000/"
+    # Get the IP address of the host machine.
+    SPARK_DRIVER_HOST = (
+        subprocess.check_output(["hostname", "-i"]).decode(encoding="utf-8").strip()
+    )
+
+    SPARK_DRIVER_HOST = re.sub(rf"\s*127.0.0.1\s*", "", SPARK_DRIVER_HOST)
+    os.environ["SPARK_LOCAL_IP"] = SPARK_DRIVER_HOST
+
+
+    class SPARK_ENV(Enum):
+        LOCAL = [
+            ("spark.master", "local"),
+            ("spark.driver.host", SPARK_DRIVER_HOST),
+        ]
+        K8S = [
+            ("spark.master", "spark://spark-master-svc:7077"),
+            ("spark.driver.bindAddress", "0.0.0.0"),
+            ("spark.driver.host", SPARK_DRIVER_HOST),
+            ("spark.driver.port", "7077"),
+            ("spark.submit.deployMode", "client"),
+        ]
+
+
+    def get_spark_context(app_name: str, config: SPARK_ENV) -> SparkSession:
+        """Get a Spark context with the given configuration."""
+        spark_conf = SparkConf().setAll(config.value).setAppName(app_name)
+        return SparkSession.builder.config(conf=spark_conf).getOrCreate()
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spark-word-count
+  labels:
+    app: spark-word-count
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spark-word-count
+  template:
+    metadata:
+      labels:
+        app: spark-word-count
+    spec:
+      initContainers:
+        - name: init-wait-hdfs
+          image: busybox:latest
+          command: [ "/bin/sh", "-c" ]
+          args:
+            - |
+              echo "Waiting for HDFS to be ready..."
+              while ! nc -z namenode 9000; do
+                sleep 5
+              done
+      containers:
+        - name: spark-word-count
+          image: bitnami/spark:3.5.2-debian-12-r0
+          command: [ "sh", "-c" ]
+          args:
+            - |
+              # echo "Waiting for filename input... Please provide the filename using \`kubectl exec\`.";
+              # while [ ! -f /tmp/filename.txt ]; do
+              #  sleep 5;
+              # done;
+              # FILENAME=$(cat /tmp/filename.txt);
+              FILENAME="alice-in-wonderland.txt";
+              echo "Filename received: $FILENAME";
+              /opt/bitnami/spark/bin/spark-submit \
+                --master spark://spark-master-svc:7077 \
+                --conf spark.driver.extraJavaOptions=-Duser.home=/root \
+                --conf spark.jars.ivy=/root/.ivy2 \
+                --conf spark.hadoop.fs.defaultFS=hdfs://namenode:9000 \
+                --conf spark.hadoop.security.authentication=none \
+                --conf spark.hadoop.security.authorization=false \
+                /opt/bitnami/spark/examples/word-count.py $FILENAME;
+          env:
+            - name: SPARK_LOCAL_DIRS
+              value: "/tmp/spark"
+            - name: SPARK_CONF_DIR
+              value: "/opt/bitnami/spark/conf"
+            - name: HOME
+              value: "/root"
+          stdin: true # Allow the container to accept stdin input
+          tty: true   # Allows for interactive commands
+          volumeMounts:
+            - name: pi-scripts
+              mountPath: /opt/bitnami/spark/examples/word-count.py
+              subPath: word-count.py
+            - name: pi-scripts
+              mountPath: /opt/bitnami/spark/examples/utils.py
+              subPath: utils.py
+            - name: ivy-cache
+              mountPath: /root/.ivy2
+      volumes:
+        - name: pi-scripts
+          configMap:
+            name: word-count-config
+        - name: ivy-cache
+          emptyDir: { }
