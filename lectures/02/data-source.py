@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field, asdict
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from uuid import uuid4
 
 def get_uuid():
@@ -23,7 +23,7 @@ import json
 class PackageObj:
     payload: SensorObj
     correlation_id: str = field(default_factory=get_uuid)
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(tz=timezone(timedelta(hours=2))))
     schema_version: int = field(default=2)
 
     def to_dict(self):
@@ -66,7 +66,6 @@ SCHEMA = {
 
 import random
 def get_sensor_sample(sensor_id:int = None, modality:int = None, unit: str = "MW", temporal_aspect: str=VALID_TEMPORAL_ASPECTS[0]) -> SensorObj:
-    
     if sensor_id is None:
         sensor_id = random.choice(VALID_SENSOR_IDS)
     if modality is None:
