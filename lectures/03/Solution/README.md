@@ -64,3 +64,95 @@ Dette er text
 1. Toggle the following values in the redpanda config map ([redpanda.yaml](./redpanda.yaml)) to enable Kafka modules.
     - `KAFKA_SCHEMAREGISTRY_ENABLED`=`true`
     - `CONNECT_ENABLED`=`true`
+
+- Registry (kafka-schema-registry)
+  - `kubectl port-forward svc/kafka-schema-registry 8081`. Make a `curl` cmd in a terminal using the URL [http://127.0.0.1:8081](http://127.0.0.1:8081) and get this output:
+    
+    ```bash
+    curl http://127.0.0.1:8081
+    {}%                                  
+    ```
+
+- Connect (kafka-connect)
+  - `kubectl port-forward svc/kafka-connect 8083`. Make a `curl` cmd in a terminal using the URL [http://127.0.0.1:8083](http://127.0.0.1:8083) and get this output:
+    
+    ```bash
+    curl http://127.0.0.1:8083
+    {"version":"7.3.1-ce","commit":"a453cbd27246f7bb","kafka_cluster_id":"<kafka_cluster_id>"}%                                    
+    ```
+
+- KsqlDB (kafka-ksqldb-server) and KsqlDB CLI (kafka-ksqldb-cli)
+  - `kubectl exec --stdin --tty deployment/kafka-ksqldb-cli -- ksql http://kafka-ksqldb-server:8088` and get this output:
+
+    ```bash
+                      
+                      ===========================================
+                      =       _              _ ____  ____       =
+                      =      | | _____  __ _| |  _ \| __ )      =
+                      =      | |/ / __|/ _` | | | | |  _ \      =
+                      =      |   <\__ \ (_| | | |_| | |_) |     =
+                      =      |_|\_\___/\__, |_|____/|____/      =
+                      =                   |_|                   =
+                      =        The Database purpose-built       =
+                      =        for stream processing apps       =
+                      ===========================================
+
+    Copyright 2017-2022 Confluent Inc.
+
+    CLI v7.3.1, Server v7.3.1 located at http://kafka-ksqldb-server:8088
+    Server Status: RUNNING
+
+    Having trouble? Type 'help' (case-insensitive) for a rundown of how things work!
+
+    ksql> 
+    ```
+
+### Exercise 3 - The Redpanda console
+
+**Task**: Deploy Redpanda using manifest file [redpanda.yaml](./redpanda.yaml) with the following command:
+
+```bash
+kubectl apply -f redpanda.yaml
+```
+
+**Task**: Access Redpanda using the following command: `kubectl port-forward svc/redpanda 8080` to open [Redpanda](http://127.0.0.1:8080) in your browser!
+
+**Task**: Explore the following tabs:
+
+- [Overview](http://127.0.0.1:8080/overview)
+- [Topics](http://127.0.0.1:8080/topics)
+- [Schema Registry](http://127.0.0.1:8080/schema-registry)
+- [Kafka Connectors](http://127.0.0.1:8080/connect-clusters/Connectors)
+
+
+### Exercise 4 - Produce messages to Kafka using Python
+
+**Tasks**: Think about what properties you want for the `INGESTION` topic:
+
+- How many partitions will you have for the `INGESTION` topic?
+- Which replication factor will you use for the `INGESTION` topic?
+- Which min in-sync replicas will you use for the `INGESTION` topic?
+- What would be an appropriate retention time for the `INGESTION` topic?
+- What would be an appropriate retention size for the `INGESTION` topic?
+
+**Task**: Create the `INGESTION` topic with your chosen properties.
+
+**Task**: Question: Which property will be possible if you add a key, which defines the sensor id, to each record?
+
+**Task**: Update your program from [lecture 2 exercise 8](../02/README.md#exercise-10---create-six-fictive-data-sources) to produce sensor samples directly to Kafka.
+
+**Hint**: If you did not create a program then use the scripts [./hints/*.py](./hints).
+
+```
+{'payload': '{"sensor_id": 1, "modality": -405, "unit": "MW", "temporal_aspect": "real_time"}', 'correlation_id': '2846eebb-155c-4409-9885-efb395bfeef2', 'created_at': 1727026679.322013, 'schema_version': 1}
+{'payload': '{"sensor_id": 5, "modality": 11, "unit": "MW", "temporal_aspect": "real_time"}', 'correlation_id': 'ff8e12a2-4bac-4931-9cf6-911cc22de6ee', 'created_at': 1727026679.358751, 'schema_version': 1}
+{'payload': '{"sensor_id": 6, "modality": -355, "unit": "MW", "temporal_aspect": "real_time"}', 'correlation_id': '2c124674-93f4-43e9-923e-43926da39991', 'created_at': 1727026679.399657, 'schema_version': 1}
+{'payload': '{"sensor_id": 3, "modality": 102, "unit": "MW", "temporal_aspect": "real_time"}', 'correlation_id': '8260146f-f3f3-4fa6-a36f-bd171fda10d3', 'created_at': 1727026679.437058, 'schema_version': 1}
+{'payload': '{"sensor_id": 2, "modality": 513, "unit": "MW", "temporal_aspect": "real_time"}', 'correlation_id': '228dfdf4-08fc-4ba1-b84d-d416305e16d6', 'created_at': 1727026679.473701, 'schema_version': 1}
+{'payload': '{"sensor_id": 4, "modality": -509, "unit": "MW", "temporal_aspect": "real_time"}', 'correlation_id': '5b78b104-69de-4f55-bf00-6ef65a0af999', 'created_at': 1727026679.515263, 'schema_version': 1}
+```
+
+**Verification**: To verify that the program is producing messages to the `INGESTION` topic. Open Redpanda console: [localhost:8080/topics/INGESTION](http://127.0.0.1:8080/topics/INGESTION?p=-1&s=50&o=-1#messages).
+
+![Redpanda Igenstion](images/Redpanda%20Igenstion.png)
+
