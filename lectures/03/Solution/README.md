@@ -185,12 +185,9 @@ A new group is created and gets assigned members i.e. partitions of the INGESTIO
 
 **Task**: Questions:
 
-- How can we get two consumers to receive identical records?
-
+- How can we get two consumers to receive identical records?<br/>
     Create two kafkaConsumer objects with no specific partition assignment arguments given. Auto assigner assigns all partitions to all groups. 
-- How can we get two consumers to receive unique records?
-
+- How can we get two consumers to receive unique records?<br/>
     Yes if we speciffy assignment by [KafkaConsumer.assign(*partitions*)](https://kafka-python.readthedocs.io/en/master/apidoc/KafkaConsumer.html#kafka.KafkaConsumer.assign)
-- What defines the maximum number of active parallel consumers within one consumer group?
-    
+- What defines the maximum number of active parallel consumers within one consumer group?<br/>    
     Number of partitions in topic.
