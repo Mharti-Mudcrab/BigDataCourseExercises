@@ -143,6 +143,7 @@ kubectl apply -f redpanda.yaml
 
 **Hint**: If you did not create a program then use the scripts [./hints/*.py](./hints).
 
+**Output**:
 ```
 {'payload': '{"sensor_id": 1, "modality": -405, "unit": "MW", "temporal_aspect": "real_time"}', 'correlation_id': '2846eebb-155c-4409-9885-efb395bfeef2', 'created_at': 1727026679.322013, 'schema_version': 1}
 {'payload': '{"sensor_id": 5, "modality": 11, "unit": "MW", "temporal_aspect": "real_time"}', 'correlation_id': 'ff8e12a2-4bac-4931-9cf6-911cc22de6ee', 'created_at': 1727026679.358751, 'schema_version': 1}
@@ -156,3 +157,21 @@ kubectl apply -f redpanda.yaml
 
 ![Redpanda Igenstion](Images/Redpanda_Igenstion.png)
 
+
+### Exercise 5 - Consume messages from Kafka using Python with single and multiple consumers
+
+**Task**: Create a consumer program and run it in the terminal in your interactive container.
+
+**Command**:
+``` python simple-consumer.py 1 ```
+
+**Output**:
+
+```
+PackageObj(payload=SensorObj(sensor_id=4, modality=-236, unit='MW', temporal_aspect='real_time'), correlation_id='7a06e4d8-653a-4133-a167-66fa6970eb6c', created_at=1727026676.434048, schema_version=1)
+PackageObj(payload=SensorObj(sensor_id=4, modality=-183, unit='MW', temporal_aspect='real_time'), correlation_id='b4c12bb6-a5b0-421d-b42e-106b102cef2f', created_at=1727026677.453294, schema_version=1)
+PackageObj(payload=SensorObj(sensor_id=4, modality=17, unit='MW', temporal_aspect='real_time'), correlation_id='a8899406-7da5-49fb-b3bc-46c7f5765323', created_at=1727026678.489819, schema_version=1)
+PackageObj(payload=SensorObj(sensor_id=4, modality=-509, unit='MW', temporal_aspect='real_time'), correlation_id='5b78b104-69de-4f55-bf00-6ef65a0af999', created_at=1727026679.515263, schema_version=1)
+^Croot@interactive:/home/root/code/03/Solution# python simple-consumer.py 1
+group_id=1
+```
