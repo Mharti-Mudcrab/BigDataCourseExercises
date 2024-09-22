@@ -32,7 +32,7 @@ kafka-console-producer.sh --bootstrap-server kafka:9092 --topic test
 ```
 
 **Output**:
-```bash
+```
 D:\Programmer\GitHub Repositories\BigDataCourseExercises\lectures\03>kubectl exec --tty -i kafka-client -- bash
 I have no name!@kafka-client:/$ kafka-console-producer.sh --bootstrap-server kafka:9092 --topic test
 >Hej
@@ -42,12 +42,12 @@ I have no name!@kafka-client:/$ kafka-console-producer.sh --bootstrap-server kaf
 
 4. Run the following commands in the second terminal to consume messages from the Kafka topic `test`:
 
-```bash
+```
 kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic test --from-beginning
 ```
 
 **Output**:
-```bash
+```
 C:\Users\madsw>kubectl exec --tty -i kafka-client -- bash
 I have no name!@kafka-client:/$ kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic test --from-beginning
 Hej
