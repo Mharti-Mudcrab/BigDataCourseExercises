@@ -154,5 +154,5 @@ kubectl apply -f redpanda.yaml
 
 **Verification**: To verify that the program is producing messages to the `INGESTION` topic. Open Redpanda console: [localhost:8080/topics/INGESTION](http://127.0.0.1:8080/topics/INGESTION?p=-1&s=50&o=-1#messages).
 
-![Redpanda Igenstion](images/Redpanda Igenstion.png)
+![Redpanda Igenstion](images/Redpanda_Igenstion.png)
 
