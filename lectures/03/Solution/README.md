@@ -162,11 +162,9 @@ kubectl apply -f redpanda.yaml
 
 **Task**: Create a consumer program and run it in the terminal in your interactive container.
 
-**Command**:
-``` python simple-consumer.py 1 ```
+**Command**: ``` python simple-consumer.py 1 ```
 
 **Output**:
-
 ```
 PackageObj(payload=SensorObj(sensor_id=4, modality=-236, unit='MW', temporal_aspect='real_time'), correlation_id='7a06e4d8-653a-4133-a167-66fa6970eb6c', created_at=1727026676.434048, schema_version=1)
 PackageObj(payload=SensorObj(sensor_id=4, modality=-183, unit='MW', temporal_aspect='real_time'), correlation_id='b4c12bb6-a5b0-421d-b42e-106b102cef2f', created_at=1727026677.453294, schema_version=1)
@@ -175,3 +173,5 @@ PackageObj(payload=SensorObj(sensor_id=4, modality=-509, unit='MW', temporal_asp
 ^Croot@interactive:/home/root/code/03/Solution# python simple-consumer.py 1
 group_id=1
 ```
+
+
