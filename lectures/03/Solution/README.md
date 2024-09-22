@@ -40,6 +40,6 @@ kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic test --from-begi
 
 ### Exercise 2 - Additional deployments of Kafka Connect, Kafka Schema Registry, and Kafka KSQL
 
-1. Apply the Kafka Schema Registry manifest file to your namespace. ```bash kubectl apply -f``` kafka-schema-registry.yaml`
+1. Apply the Kafka Schema Registry manifest file to your namespace. ```bash kubectl apply -f kafka-schema-registry.yaml ```
 1. Apply the Kafka Connect module to your namespace. ```bash kubectl apply -f kafka-connect.yaml```
 1. Apply the Kafka Ksqldb server to your namespace. ```bash kubectl apply -f kafka-ksqldb.yaml```
