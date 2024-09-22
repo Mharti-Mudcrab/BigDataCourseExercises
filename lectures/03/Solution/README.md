@@ -166,12 +166,28 @@ kubectl apply -f redpanda.yaml
 
 **Output**:
 ```
+root@interactive:/home/root/code/03/Solution# python simple-consumer.py 1
+group_id=1
 PackageObj(payload=SensorObj(sensor_id=4, modality=-236, unit='MW', temporal_aspect='real_time'), correlation_id='7a06e4d8-653a-4133-a167-66fa6970eb6c', created_at=1727026676.434048, schema_version=1)
 PackageObj(payload=SensorObj(sensor_id=4, modality=-183, unit='MW', temporal_aspect='real_time'), correlation_id='b4c12bb6-a5b0-421d-b42e-106b102cef2f', created_at=1727026677.453294, schema_version=1)
 PackageObj(payload=SensorObj(sensor_id=4, modality=17, unit='MW', temporal_aspect='real_time'), correlation_id='a8899406-7da5-49fb-b3bc-46c7f5765323', created_at=1727026678.489819, schema_version=1)
 PackageObj(payload=SensorObj(sensor_id=4, modality=-509, unit='MW', temporal_aspect='real_time'), correlation_id='5b78b104-69de-4f55-bf00-6ef65a0af999', created_at=1727026679.515263, schema_version=1)
-^Croot@interactive:/home/root/code/03/Solution# python simple-consumer.py 1
-group_id=1
 ```
 
+**Task**: Start another consumer but with a different group id in your interactive container. What happens when you run the program?
 
+A new group is created and gets assigned members i.e. partitions of the INGESTION topic 
+
+![ConsumerTab](Images/KafkaConsumers.png)
+
+**Task**: Open [localhost:8080/topics/INGESTION](http://127.0.0.1:8080/topics/INGESTION#consumers). You should now see a table similar to the one below. What does the Lag column mean?
+    - How far behind the group is on reading new data
+
+**Task**: Questions:
+
+- How can we get two consumers to receive identical records?
+    Create two kafkaConsumer objects with no specific partition assignment arguments given. Auto assigner assigns all partitions to all groups. 
+- How can we get two consumers to receive unique records?
+    Yes if we speciffy assignment by [KafkaConsumer.assign(*partitions*)](https://kafka-python.readthedocs.io/en/master/apidoc/KafkaConsumer.html#kafka.KafkaConsumer.assign)
+- What defines the maximum number of active parallel consumers within one consumer group?
+    Number of partitions in topic.
