@@ -9,8 +9,10 @@ def get_uuid():
 class SensorObj:
     sensor_id: str
     modality: float
+    modality_color: str
     unit: str
     temporal_aspect: str
+
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -22,7 +24,7 @@ class PackageObj:
     payload: SensorObj
     correlation_id: str = field(default_factory=get_uuid)
     created_at: datetime = field(default_factory=datetime.utcnow)
-    schema_version: int = field(default=1)
+    schema_version: int = field(default=2)
 
     def to_dict(self):
         self.created_at = self.created_at.timestamp()
@@ -32,6 +34,7 @@ class PackageObj:
 VALID_SENSOR_IDS: list[int] = [1,2,3,4,5,6]
 VALID_TEMPORAL_ASPECTS: list[str] = ["real_time", "edge_prediction"]
 VALID_RANGE:tuple[int] = (-600, 600)
+VALID_RANGE_COLOR: dict[int, str] = {-200: 'Blue', 200: 'Yellow', 600: 'Red'}
 
 SCHEMA = {
 "type": "record",
@@ -55,7 +58,7 @@ SCHEMA = {
     },
     {
     "name": "schema_version",
-    "doc": "Integer verion number of the msg schema.",
+    "doc": "Integer version number of the msg schema.",
     "type": "int"
     },
 ]
@@ -68,7 +71,8 @@ def get_sensor_sample(sensor_id:int = None, modality:int = None, unit: str = "MW
         sensor_id = random.choice(VALID_SENSOR_IDS)
     if modality is None:
         modality = random.choice(range(VALID_RANGE[0],VALID_RANGE[1]+1))
-    return SensorObj(sensor_id=sensor_id, modality=modality, unit=unit, temporal_aspect=temporal_aspect)
+    color: str = VALID_RANGE_COLOR[ -200 if modality <= -200 else ( 200 if modality <= 200 else 600 ) ]
+    return SensorObj(sensor_id=sensor_id, modality=modality, modality_color=color, unit=unit, temporal_aspect=temporal_aspect)
 
 po = PackageObj(payload=get_sensor_sample(sensor_id = 1))
 po.to_dict()
