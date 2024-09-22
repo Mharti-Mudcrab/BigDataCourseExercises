@@ -31,10 +31,28 @@ kubectl exec --tty -i kafka-client -- bash
 kafka-console-producer.sh --bootstrap-server kafka:9092 --topic test
 ```
 
+**Output**:
+```bash
+D:\Programmer\GitHub Repositories\BigDataCourseExercises\lectures\03>kubectl exec --tty -i kafka-client -- bash
+I have no name!@kafka-client:/$ kafka-console-producer.sh --bootstrap-server kafka:9092 --topic test
+>Hej
+>Dette er text
+>345324564578469
+```
+
 4. Run the following commands in the second terminal to consume messages from the Kafka topic `test`:
 
 ```bash
 kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic test --from-beginning
+```
+
+**Output**:
+```bash
+C:\Users\madsw>kubectl exec --tty -i kafka-client -- bash
+I have no name!@kafka-client:/$ kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic test --from-beginning
+Hej
+Dette er text
+345324564578469
 ```
 
 
@@ -43,3 +61,6 @@ kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic test --from-begi
 1. Apply the Kafka Schema Registry manifest file to your namespace. ```bash kubectl apply -f kafka-schema-registry.yaml ```
 1. Apply the Kafka Connect module to your namespace. ```bash kubectl apply -f kafka-connect.yaml```
 1. Apply the Kafka Ksqldb server to your namespace. ```bash kubectl apply -f kafka-ksqldb.yaml```
+1. Toggle the following values in the redpanda config map ([redpanda.yaml](./redpanda.yaml)) to enable Kafka modules.
+    - `KAFKA_SCHEMAREGISTRY_ENABLED`=`true`
+    - `CONNECT_ENABLED`=`true`
