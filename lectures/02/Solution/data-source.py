@@ -1,6 +1,11 @@
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone, timedelta
 from uuid import uuid4
+import json
+import random
+from hdfs.ext.avro import AvroWriter, AvroReader
+from src.client import InsecureClient, get_hdfs_client
+import threading
 
 def get_uuid():
     return str(uuid4())
@@ -13,12 +18,10 @@ class SensorObj:
     unit: str
     temporal_aspect: str
 
-
     def to_dict(self) -> dict:
         return asdict(self)
 
 
-import json 
 @dataclass
 class PackageObj:
     payload: SensorObj
@@ -37,31 +40,31 @@ VALID_RANGE:tuple[int] = (-600, 600)
 VALID_RANGE_COLOR: dict[int, str] = {-200: 'Blue', 200: 'Yellow', 600: 'Red'}
 
 SCHEMA = {
-"type": "record",
-"namespace": "default",
-"name": "SENSORPACKAGES",
-"fields": [
-    {
-    "name": "payload",
-    "doc": "Payload of the message.",
-    "type": "string"
-    },
-    {
-    "name": "correlation_id",
-    "doc": "UUID of this message.",
-    "type": "string"
-    },
-    {
-    "name": "created_at",
-    "doc": "Timestamp (UTC) for msg creation.",
-    "type": "double"
-    },
-    {
-    "name": "schema_version",
-    "doc": "Integer version number of the msg schema.",
-    "type": "int"
-    },
-]
+    "type": "record",
+    "namespace": "default",
+    "name": "SENSORPACKAGES",
+    "fields": [
+        {
+            "name": "payload",
+            "doc": "Payload of the message.",
+            "type": "string"
+        },
+        {
+            "name": "correlation_id",
+            "doc": "UUID of this message.",
+            "type": "string"
+        },
+        {
+            "name": "created_at",
+            "doc": "Timestamp (UTC) for msg creation.",
+            "type": "double"
+        },
+        {
+            "name": "schema_version",
+            "doc": "Integer version number of the msg schema.",
+            "type": "int"
+        },
+    ]
 }
 
 import random
@@ -73,33 +76,33 @@ def get_sensor_sample(sensor_id:int = None, modality:int = None, unit: str = "MW
     color: str = VALID_RANGE_COLOR[ -200 if modality <= -200 else ( 200 if modality <= 200 else 600 ) ]
     return SensorObj(sensor_id=sensor_id, modality=modality, modality_color=color, unit=unit, temporal_aspect=temporal_aspect)
 
-po = PackageObj(payload=get_sensor_sample(sensor_id = 1))
-po.to_dict()
-
-from hdfs.ext.avro import AvroWriter
-from src.client import InsecureClient
 
 def get_filename(self, format: str = "avro") -> str:
     return f"/data/raw/sensor_id={self.payload.sensor_id}/temporal_aspect={self.payload.temporal_aspect}/{self.created_at.strftime('year=%Y/month=%m/day=%d')}/{self.correlation_id}.{format}"
 
-def generate_sample(sensor_id:str, hdfs_client: InsecureClient) -> None:
+
+def generate_sample(sensor_id: str, hdfs_client: InsecureClient) -> None:
     po = PackageObj(payload=get_sensor_sample(sensor_id=sensor_id))
-    filename:str = get_filename(po)
-    print(po)
-    with AvroWriter(client = hdfs_client, hdfs_path = filename, schema=SCHEMA, overwrite=True) as writer:
+    filename: str = get_filename(po)
+    print("Filename: ", filename)
+    with AvroWriter(client=hdfs_client, hdfs_path=filename, schema=SCHEMA, overwrite=True) as writer:
         writer.write(po.to_dict())
+    with AvroReader(hdfs_client, filename) as reader:
+        schema = reader.schema
+        content = reader.content
+        print("Sensor data: ", list(reader))
+        print("\n")
 
-import threading
-from src.client import get_hdfs_client
 
-hdfs_client = get_hdfs_client()
-
-class RepeatTimer(threading.Timer):  
-    def run(self):  
-        while not self.finished.wait(self.interval):  
+class RepeatTimer(threading.Timer):
+    def run(self):
+        while not self.finished.wait(self.interval):
             self.function(*self.args, **self.kwargs)
 
+
 def main():
+    hdfs_client = get_hdfs_client()
+
     timer1 = RepeatTimer(1.0, generate_sample, [1, hdfs_client])
     timer2 = RepeatTimer(1.0, generate_sample, [2, hdfs_client])
     timer3 = RepeatTimer(1.0, generate_sample, [3, hdfs_client])
