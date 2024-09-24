@@ -191,3 +191,22 @@ A new group is created and gets assigned members i.e. partitions of the INGESTIO
     Yes if we speciffy assignment by [KafkaConsumer.assign(*partitions*)](https://kafka-python.readthedocs.io/en/master/apidoc/KafkaConsumer.html#kafka.KafkaConsumer.assign), or put them in the same group.
 - What defines the maximum number of active parallel consumers within one consumer group?<br/>    
     Number of partitions in topic.
+
+
+### Exercise 6 - Kafka Ksql
+
+The objective of this exercise is use ksqlDB to split the records in the `INGESTION` topic into six separate streams
+`SENSOR_ID_{1, 2, ..., 6}` based on the sensor id in the `payload` field of the JSON file.
+
+#### Useful ksqlDB commands
+
+- `SHOW TOPICS;`
+- `PRINT <topic> FROM BEGINNING;`
+- `SHOW STREAMS;`
+- `CREATE STREAM ...`
+
+**Task**: Get interactive shell with ksqlDB.
+
+  ```
+  kubectl exec --stdin --tty deployment/kafka-ksqldb-cli -- ksql http://kafka-ksqldb-server:8088
+  ```
