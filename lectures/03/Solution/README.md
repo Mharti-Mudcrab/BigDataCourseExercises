@@ -210,3 +210,68 @@ The objective of this exercise is use ksqlDB to split the records in the `INGEST
   ```
   kubectl exec --stdin --tty deployment/kafka-ksqldb-cli -- ksql http://kafka-ksqldb-server:8088
   ```
+
+  **Task**: Create a stream over the existing `INGESTION` topic with the following name `STREAM_INGESTION`.
+
+  ```sql
+CREATE
+STREAM STREAM_INGESTION (
+  payload STRING,
+  correlation_id STRING,
+  created_at DOUBLE,
+  schema_version INTEGER
+) WITH (KAFKA_TOPIC = 'INGESTION', VALUE_FORMAT = 'JSON');
+```
+
+**Output**:
+```bash
+ Message
+----------------
+ Stream created
+----------------
+```
+
+**Task**: Create a new stream based on previously created stream `STREAM_INGESTION`. Start by writing a SQL statement
+which filters the records with the sensor of interest. Then populate the records into a new stream
+`SENSOR_ID_<sensor_id>`.
+
+```sql
+CREATE
+STREAM SENSOR_ID_<sensor_id> AS
+SELECT *
+FROM STREAM_INGESTION
+WHERE EXTRACTJSONFIELD(PAYLOAD, '$.sensor_id') = '<sensor_id>';
+```
+
+**Output**:
+```bash
+ Message
+------------------------------------------
+ Created query with ID CSAS_SENSOR_ID_3_3
+------------------------------------------
+```
+
+**Task**: Validate your newly created streams using ksql commands in its CLI.
+
+```sql
+SELECT *
+FROM SENSOR_ID_<sensor_id> EMIT CHANGES;
+```
+
+**Output**:
+```bash
++----------------------------+----------------------------+----------------------------+----------------------------+
+|PAYLOAD                     |CORRELATION_ID              |CREATED_AT                  |SCHEMA_VERSION              |
++----------------------------+----------------------------+----------------------------+----------------------------+
+|{"sensor_id": 3, "modality":|d2c8582b-9c85-4445-8bde-947c|1727269433.891995           |1                           |
+| 594, "unit": "MW", "tempora|014769ef                    |                            |                            |
+|l_aspect": "real_time"}     |                            |                            |                            |
+|{"sensor_id": 3, "modality":|7dec6858-767a-481c-acd7-315b|1727269434.937121           |1                           |
+| -577, "unit": "MW", "tempor|cf669dbd                    |                            |                            |
+|al_aspect": "real_time"}    |                            |                            |                            |
+|{"sensor_id": 3, "modality":|ed06aebb-5630-480c-a2d1-eb34|1727269436.028175           |1                           |
+| -493, "unit": "MW", "tempor|09c49c19                    |                            |                            |
+|al_aspect": "real_time"}    |                            |                            |                            |
+|{"sensor_id": 3, "modality":|10854d9f-f790-4a2e-81bc-31a1|1727269437.050736           |1                           |
+| 300, "unit": "MW", "tempora|8646576a                    |                            |                            |
+```
