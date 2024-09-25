@@ -276,3 +276,8 @@ FROM SENSOR_ID_<sensor_id> EMIT CHANGES;
 | 300, "unit": "MW", "tempora|8646576a                    |                            |                            |
 ```
 
+
+### Exercise 7 - Kafka Connect and HDFS
+
+**Task**: Ensure you have HDFS running as in lecture 2.
+**Task**: Setup HDFS 2 Sink Connector in our `kafka-connect` service.
