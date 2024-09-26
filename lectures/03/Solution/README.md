@@ -281,3 +281,143 @@ FROM SENSOR_ID_<sensor_id> EMIT CHANGES;
 
 **Task**: Ensure you have HDFS running as in lecture 2.
 **Task**: Setup HDFS 2 Sink Connector in our `kafka-connect` service.
+
+````bash
+curl -X POST -H "Content-Type: application/json" -d @hints/configuration.json http://127.0.0.1:8083/connectors
+````
+
+**Output**:
+```
+{
+    "config": {
+        "connector.class": "io.confluent.connect.hdfs.HdfsSinkConnector",
+        "flush.size": "3",
+        "format.class": "io.confluent.connect.hdfs.json.JsonFormat",
+        "hdfs.url": "hdfs://namenode:9000",
+        "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+        "key.converter.schema.registry.url": "http://kafka-schema-registry:8081",
+        "key.converter.schemas.enable": "false",
+        "name": "hdfs-sink",
+        "tasks.max": "3",
+        "topics": "INGESTION",
+        "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+        "value.converter.schema.registry.url": "http://kafka-schema-registry:8081",
+        "value.converter.schemas.enable": "false"
+    },
+    "name": "hdfs-sink",
+    "tasks": [
+    ],
+    "type": "sink"
+}
+```
+
+**Task**: Validate the HDFS 2 Sink Connector is working as expected.
+
+**Command**:
+```bash
+kubectl run hdfs-cli -i --tty --image apache/hadoop:3 -- bash  
+```
+```bash
+hdfs dfs -ls /topics/
+```
+<details>
+  <summary><strong>Alternative</strong>:</summary>
+  ```bash
+  hdfs dfs -ls /topics/
+  hdfs dfs -fs hdfs://namenode:9000 -ls /topics/
+  ```
+</details>
+
+**Output**:
+```
+drwxr-xr-x   - root supergroup          0 2024-09-26 10:42 /topics/+tmp
+drwxr-xr-x   - root supergroup          0 2024-09-26 10:43 /topics/INGESTION
+```
+
+- Use Redpanda UI to find the total lag (difference between log ned offset and group offset) of the consumer group
+  `connect-hdfs-sink` [localhost:8080/groups/connect-hdfs-sink](http://127.0.0.1:8080/groups/connect-hdfs-sink).
+
+  ![Redpanda hdfs sink](Images/Redpanda_hdfs-sink.png)
+    
+    - How does HDFS 2 Sink Connector keep up with the six fictive data sources?<br\>
+        It keeps up mostly perfect, but still has lag of one or two when there is no data flowing in.<br\>
+        It seems to be updating once every minute keeping lag at max 2. Perhaps this is the reason?
+        ![redpanda hdfs-cli config](Images/Redpanda_hdfs-cli-config.png)
+
+
+### Exercise 8 - Flume
+
+The objective of this exercise is to ingest data from a command-line program into Kafka using Flume. This exercise will
+simulate a scenario where an endpoint continuously provides new data that can be ingested using Flume.
+
+**Task**: Deploy the Flume manifest [flume.yaml](flume.yaml).
+
+**Command**:
+```bash
+kubectl apply -f flume.yaml
+```
+
+**Task**: Open an interactive container with Python 3.12 or use the interactive pod provided.
+  [text_input.py](./hints/text_input.py)
+
+**Task**: Open [localhost:8080/topics/flume-logs](http://localhost:8080/topics/flume-logs). You should now see the
+streamed data from the command-line into a kafka topic.
+
+**Optional task**: Set up a new HDFS 2 Sink Connector to ingest the data into HDFS from the `flume-logs` Kafka topic.
+
+created [configuration_flume_sink.json](..\hints\configuration_flume_sink.json) with changes from original:
+  - filename
+    - "name": "hdfs-flume-sink"
+    - "config": 
+      - "topics": "flume-logs"
+      - "value.converter": "org.apache.kafka.connect.json.StringConverter"
+
+**command**:
+```bash
+curl -X POST -H "Content-Type: application/json" -d @hints/configuration_flume_sink.json http://127.0.0.1:8083/connectors
+```
+<details>
+  <summary><strong>Alternative</strong>: *doesnt work* </summary>
+  ```bash
+  curl -X POST ^
+  http://127.0.0.1:8083/connectors ^
+  -H 'Content-Type: application/json' ^
+  -d '{ ^
+      "name": "hdfs-sink", ^
+      "config": { ^
+          "connector.class": "io.confluent.connect.hdfs.HdfsSinkConnector", ^
+          "tasks.max": "3", ^
+          "topics": "INGESTION", ^
+          "hdfs.url": "hdfs://namenode:9000", ^
+          "flush.size": "3", ^
+          "format.class": "io.confluent.connect.hdfs.json.JsonFormat", ^
+          "key.converter.schemas.enable":"false", ^
+          "key.converter": "org.apache.kafka.connect.storage.StringConverter", ^
+          "key.converter.schema.registry.url": "http://kafka-schema-registry:8081", ^
+          "value.converter.schemas.enable":"false", ^
+          "value.converter.schema.registry.url": "http://kafka-schema-registry:8081", ^
+          "value.converter": "org.apache.kafka.connect.json.JsonConverter" ^
+      } ^
+  }'
+  ```
+</details>
+
+### Exercise 9 - Sqoop
+
+#### Useful Sqoop commands
+
+- `sqoop list-databases --connect "jdbc:<DB_DRIVER>://<DB_URL>/<DB_TABLE>"`
+- `sqoop import --connect "jdbc:<DB_DRIVER>://<DB_URL>/<DB_TABLE>"`
+
+**Task**: Deploy PostgresSQL database using Helm Chart with the following command:
+
+```bash
+helm install postgresql ^
+  --version=12.1.5 ^
+  --set auth.username=root ^
+  --set auth.password=pwd1234 ^
+  --set auth.database=employees ^
+  --set primary.extendedConfiguration="password_encryption=md5" ^
+  --repo https://charts.bitnami.com/bitnami ^
+  postgresql
+```
