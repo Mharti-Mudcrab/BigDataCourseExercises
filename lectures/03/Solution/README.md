@@ -421,3 +421,139 @@ helm install postgresql ^
   --repo https://charts.bitnami.com/bitnami ^
   postgresql
 ```
+
+**Task**: Get interactive shell with PostgresSQL.
+
+  ```
+  kubectl exec -it postgresql-0  -- bash
+  ```
+
+  **Task**: Seed the database with employees.
+
+- Login to the database
+    ```bash
+    PGPASSWORD=pwd1234 psql -U root -d employees
+    ```
+
+- Seed the database with employees
+    ```
+    CREATE TABLE employees ( ^
+      id SERIAL PRIMARY KEY, ^
+      name VARCHAR(255) NOT NULL, ^
+      department VARCHAR(255) NOT NULL, ^
+      salary DECIMAL(10, 2) NOT NULL ^
+    ); ^
+    ^
+    INSERT INTO employees (name, department, salary) VALUES ^
+    ('John Doe', 'Engineering', 75000), ^
+    ('Jane Smith', 'Marketing', 65000), ^
+    ('Alice Johnson', 'HR', 60000), ^
+    ('Robert Brown', 'Finance', 80000);
+    ```
+
+    **Output**:
+    ```bash
+    I have no name!@postgresql-0:/$     PGPASSWORD=pwd1234 psql -U root -d employees
+    psql (15.1)
+    Type "help" for help.
+
+    employees=> CREATE TABLE employees (
+    employees(>       id SERIAL PRIMARY KEY,
+    employees(>       name VARCHAR(255) NOT NULL,
+    employees(>       department VARCHAR(255) NOT NULL,
+    employees(>       salary DECIMAL(10, 2) NOT NULL
+    employees(> );
+    CREATE TABLE
+    employees=>
+    employees=> INSERT INTO employees (name, department, salary) VALUES
+    employees->     ('John Doe', 'Engineering', 75000),
+    employees->     ('Jane Smith', 'Marketing', 65000),
+    employees->     ('Alice Johnson', 'HR', 60000),
+    employees->     ('Robert Brown', 'Finance', 80000);
+    INSERT 0 4
+    employees=>
+    ```
+
+- **Verify**: Check employees were added
+    ```bash
+    SELECT * FROM employees;
+    ```
+
+    **Output**:
+    ´´´bash
+    employees=> SELECT * FROM employees;
+    id |     name      | department  |  salary
+    ----+---------------+-------------+----------
+      1 | John Doe      | Engineering | 75000.00
+      2 | Jane Smith    | Marketing   | 65000.00
+      3 | Alice Johnson | HR          | 60000.00
+      4 | Robert Brown  | Finance     | 80000.00
+    (4 rows)
+    ```
+
+
+**Task**: Deploy the Sqoop manifest [sqoop.yaml](sqoop.yaml).
+```bash
+kubectl apply -f sqoop.yaml
+```
+
+**Task**: Get interactive shell with Sqoop.
+  ```
+  kubectl exec -it sqoop-697dc689f-6bpwz -- bash
+  ```
+
+
+**Task**: Verify that Sqoop can connect to the PostgresSQL database
+
+List databases with Sqoop
+```bash
+sqoop list-databases \
+--connect "jdbc:postgresql://postgresql:5432/employees" \
+--username root \
+--password pwd1234
+```
+
+**Output**: 
+```bash
+postgres
+template1
+template0
+employees
+```
+
+**Task**: Ingest the database into HDFS
+
+```bash
+sqoop import \
+--connect "jdbc:postgresql://postgresql:5432/employees" \
+--username root \
+--password pwd1234 \
+--table employees \
+--target-dir /employees \
+--direct \
+--m 1
+```
+
+**Output**:
+```bash
+2024-09-29 19:44:09,852 INFO manager.SqlManager: Using default fetchSize of 1000
+2024-09-29 19:44:09,853 INFO tool.CodeGenTool: Beginning code generation
+2024-09-29 19:44:09,974 INFO manager.SqlManager: Executing SQL statement: SELECT t.* FROM "employees" AS t LIMIT 1
+2024-09-29 19:44:09,999 INFO orm.CompilationManager: HADOOP_MAPRED_HOME is /usr/local/hadoop
+Note: /tmp/sqoop-root/compile/6295287d17e62c95d11e956b44465768/employees.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+2024-09-29 19:44:11,496 INFO orm.CompilationManager: Writing jar file: /tmp/sqoop-root/compile/6295287d17e62c95d11e956b44465768/employees.jar
+2024-09-29 19:44:11,509 INFO manager.DirectPostgresqlManager: Beginning psql fast path import
+2024-09-29 19:44:11,512 INFO manager.SqlManager: Executing SQL statement: SELECT t.* FROM "employees" AS t LIMIT 1
+2024-09-29 19:44:11,517 INFO manager.DirectPostgresqlManager: Copy command is COPY (SELECT "id", "name", "department", "salary" FROM "employees" WHERE 1=1) TO STDOUT WITH DELIMITER E'\54' CSV ;
+2024-09-29 19:44:11,521 INFO manager.DirectPostgresqlManager: Performing import of table employees from database employees
+2024-09-29 19:44:12,416 INFO manager.DirectPostgresqlManager: Transfer loop complete.
+2024-09-29 19:44:12,418 INFO manager.DirectPostgresqlManager: Transferred 124 bytes in 0.0971 seconds (1.2476 KB/sec)
+```
+
+**Task**: Verify that the PostgresSQL table `employees` were ingested into HDFS.
+
+**Validate**: Make sure a directory `/employees` were added to HDFS.
+
+![Employees table row in HDFS through namenode Web UI](Images/Employees_in_hdfs.png)
+

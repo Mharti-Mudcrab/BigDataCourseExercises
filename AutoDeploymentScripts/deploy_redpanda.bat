@@ -2,7 +2,6 @@
 
 echo ========== Deploy Redpanda - Ref: Lecture 3 Exercise 3 ==========
 cd /d %~dp0\..\lectures\03
-echo %cd%
 kubectl apply -f redpanda.yaml
 setlocal
 :: Define the path for the temporary file
