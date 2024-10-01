@@ -216,9 +216,6 @@ SELECT * FROM bucket.backblaze limit 100;
 - What hard drive model is the most used?
 - What hard drive model has the largest total capacity?
 
-<details>
-<summary><strong>Hint:</strong> Create SQL query</summary>
-
 ```SQL
 SELECT model,
        FLOOR(CAST(capacity_bytes AS BIGINT) / POWER(10, 9))                   AS capacity_gigabytes,
