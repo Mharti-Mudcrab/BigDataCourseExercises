@@ -165,4 +165,75 @@ WHERE input__file__name = 'hdfs://namenode:9000/lecture05/alice-in-wonderland.tx
 ```
 This one will only count the amount of words for files that match a specific path.
 
+
+
 ### Exercise 3 - Backblaze Hard Drive Data
+
+**Task**: Download drive data for 2023 Q2.
+    - [Link to file](https://f001.backblazeb2.com/file/Backblaze-Hard-Drive-Data/data_Q2_2023.zip)
+
+Create a new folder inside the HDFS and upload the `2023-06-30.csv` file to it.
+```bash
+hdfs dfs -fs hdfs://namenode:9000 -mkdir /lecture05/DriveData
+```
+
+**Task**: Upload drive data for 30/6/2023 into the new folder inside HDFS.
+```bash
+hdfs dfs -fs hdfs://namenode:9000 -put ./2023-06-30.csv /lecture05/DriveData
+```
+
+**Task**: Create a table for the Backblaze drive data.
+```SQL
+CREATE
+EXTERNAL TABLE IF NOT EXISTS bucket.backblaze (
+  `date` STRING,
+  serial_number STRING,
+  model STRING,
+  capacity_bytes STRING
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE
+LOCATION 'hdfs://namenode:9000/lecture05/DriveData/'
+TBLPROPERTIES (
+  'skip.header.line.count'='1'
+);
+```
+
+The format is CSV. We skip 1 header line because we don't want to include the header with column names as part of the
+dataset.
+
+**Task**: Get the first 100 rows of the CSV file.
+```SQL
+SELECT * FROM bucket.backblaze limit 100;
+```
+
+**Tasks:** Answer the following questions using Hive
+
+- What is the total count of each model of hard drive?
+- What is the capacity of the different hard drive models?
+- What is the total capacity of each model of hard drive?
+- What hard drive model is the most used?
+- What hard drive model has the largest total capacity?
+
+<details>
+<summary><strong>Hint:</strong> Create SQL query</summary>
+
+```SQL
+SELECT model,
+       FLOOR(CAST(capacity_bytes AS BIGINT) / POWER(10, 9))                   AS capacity_gigabytes,
+       SUM(FLOOR(CAST(capacity_bytes AS BIGINT) / POWER(10, 9))) / 1000 AS total_capacity_terabytes,
+       COUNT(*) AS count
+FROM bucket.backblaze
+WHERE input__file__name = 'hdfs://namenode:9000/lecture05/DriveData/2023-06-30.csv'
+GROUP BY model, capacity_bytes
+ORDER BY count DESC;
+```
+
+**Tasks:** Compare the results to the [blog post about the drive stats](https://www.backblaze.com/blog/backblaze-drive-stats-for-q2-2023/). For example,
+the drive model `TOSHIBA MG07ACA14TA` is the most used with 38101 total drives. This is the same amount as what
+Backblaze shows in their blog post.
+
+![drive data legend](Images/drive_data_legend.png)
+![TOSHIBA_MG07ACA14TA.png](Images/TOSHIBA_MG07ACA14TA.png)
+
